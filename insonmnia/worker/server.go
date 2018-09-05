@@ -560,9 +560,17 @@ func (m *Worker) PullTask(request *pb.PullTaskRequest, stream pb.Worker_PullTask
 
 	log.G(ctx).Debug("pulling image", zap.String("imageID", imageID))
 
-	info, rd, err := m.ovs.Save(stream.Context(), imageID)
-	if err != nil {
-		return err
+	var (
+		info types.ImageInspect
+		rd   io.ReadCloser
+	)
+	if request.OnlyDiff {
+		info, rd, err = m.ovs.SaveDiff(stream.Context(), imageID)
+	} else {
+		info, rd, err = m.ovs.Save(stream.Context(), imageID)
+		if err != nil {
+			return err
+		}
 	}
 	defer rd.Close()
 
